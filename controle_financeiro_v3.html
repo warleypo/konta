@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="indigo lighten-5">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Controle Financeiro V3</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="materialize/css/materialize.min.css"
+      media="screen,projection"
+    />
+
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+      .rounded-m {
+        border-radius: 20px;
+      }
+
+      .p-m {
+        padding: 8px 20px !important;
+      }
+
+      .mr-2 {
+        margin-right: 8px;
+      }
+
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        display: none;
+        -webkit-appearance: none;
+      }
+
+      input[type="date"]::-moz-calendar-picker-indicator {
+        display: none;
+      }
+    </style>
+
+    <!-- <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        padding: 20px;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      input,
+      select,
+      button {
+        padding: 8px;
+        margin: 5px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: center;
+      }
+
+      th {
+        background: #eee;
+      }
+
+      .receita {
+        background: #d4edda;
+      }
+
+      .despesa {
+        background: #f8d7da;
+      }
+
+      .resumo {
+        margin-top: 15px;
+        font-size: 18px;
+      }
+
+      canvas {
+        margin-top: 20px;
+      }
+    </style> -->
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="row">
+        <form class="card col s12 white" name="cadastro">
+          <div class="card-image">
+            <img src="konta_banner.png" alt="Logomarca konta" />
+          </div>
+          <div class="input-field col s12 m6 l4">
+            <input class="validate datepicker" type="date" id="data" />
+            <label class="active" for="data">Data</label>
+          </div>
+          <div class="input-field col s12 m6 l4">
+            <input type="text" id="descricao" class="validate" />
+            <label class="active" for="descricao">Descrição</label>
+          </div>
+          <div class="input-field col s12 m6 l4">
+            <input type="number" class="validate" id="valor" step="0.01" />
+            <label class="active" for="valor">Valor</label>
+          </div>
+          <div class="input-field col s12 m6 l4">
+            <select class="icons validate" id="tipo">
+              <optgroup label="Tipo">
+                <option value="Receita">Receita</option>
+                <option value="Despesa">Despesa</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="input-field col s12 m6 l4">
+            <i class="material-icons prefix">tune</i>
+            <select id="categoria" onchange="carregar()">
+              <optgroup label="Categoria/Filtro">
+                <option>Alimentação</option>
+                <option>Cartão</option>
+                <option>Moradia</option>
+                <option>Transporte</option>
+                <option>Salário</option>
+                <option>Saúde</option>
+                <option>Outros</option>
+              </optgroup>
+              <optgroup label="Filtro">
+                <option>Todos</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="input-field col s12 m6 l4">
+            <button
+              class="btn waves-effect waves-light right"
+              type="button"
+              name="action"
+              onclick="adicionar()"
+            >
+              Gravar
+              <i class="material-icons right">save</i>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="row">
+        <div class="col s12 m4 l3">
+          <h4 class="blue-text text-darken-4">Resumo</h4>
+        </div>
+
+        <div class="col s12 m8 l9">
+          <div class="col s12 m6 l4 grey-text">
+            De:
+            <div class="input-field inline">
+              <input
+                type="date"
+                class="datepicker"
+                id="dataInicio"
+                onchange="carregar()"
+              />
+            </div>
+          </div>
+          <div class="col s12 m6 l4 grey-text">
+            Até:
+            <div class="input-field inline">
+              <input
+                type="date"
+                class="datepicker"
+                id="dataFim"
+                onchange="carregar()"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col s12 m6 l3">
+            <div class="card-panel col s12 rounded-m p-m">
+              <div class="card-content">
+                <small class="card-title grey-text">Saldo Atual</small>
+                <div class="row blue-text text-darken-4">
+                  <div class="col s8">
+                    <h6>R$ <span id="saldo">0.00</span></h6>
+                  </div>
+                  <div class="col s4">
+                    <h6 class="right">
+                      <i class="material-icons">account_balance_wallet</i>
+                    </h6>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col s12 m6 l3">
+            <div class="card-panel col s12 rounded-m p-m">
+              <div class="card-content">
+                <small class="card-title grey-text">Receitas</small>
+                <div class="row green-text text-darken-2">
+                  <div class="col s8">
+                    <h6>R$ <span id="totalReceitas">0.00</span></h6>
+                  </div>
+                  <div class="col s4">
+                    <h6 class="right">
+                      <i class="material-icons">monetization_on</i>
+                    </h6>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col s12 m6 l3">
+            <div class="card-panel col s12 rounded-m p-m">
+              <div class="card-content">
+                <small class="card-title grey-text">Despesas</small>
+                <div class="row red-text text-darken-2">
+                  <div class="col s8">
+                    <h6>R$ <span id="totalDespesas">0.00</span></h6>
+                  </div>
+                  <div class="col s4">
+                    <h6 class="right">
+                      <i class="material-icons">add_shopping_cart</i>
+                    </h6>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col s12 m6 l3">
+            <div class="card-panel col s12 rounded-m p-m">
+              <div class="card-content">
+                <small class="card-title grey-text">Saldo Futuro</small>
+                <div class="row blue-text text-darken-1">
+                  <div class="col s8">
+                    <h6>R$ <span id="saldoFuturo">0.00</span></h6>
+                  </div>
+                  <div class="col s4">
+                    <h6 class="right">
+                      <i class="material-icons">insert_invitation</i>
+                    </h6>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <table class="highlight responsive-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Descrição</th>
+            <th>Categoria</th>
+            <th>Valor</th>
+            <th>Tipo</th>
+            <th>Pago</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+
+        <tbody id="lista"></tbody>
+      </table>
+
+      <canvas id="grafico" height="100"></canvas>
+
+      <br />
+
+      <form action="#" class="row right">
+        <div class="file-field input-field inline">
+          <button
+            type="button"
+            class="btn waves-effect waves-light"
+            onclick="exportarBackup()"
+          >
+            Exportar Backup
+            <i class="material-icons right">backup</i>
+          </button>
+        </div>
+
+        <div class="file-field input-field inline">
+          <div class="btn-small">
+            <span
+              >importar Backup
+              <i class="material-icons right">cloud_download</i></span
+            >
+            <input
+              type="file"
+              id="importarArquivo"
+              onchange="importarBackup(event)"
+            />
+          </div>
+          <div class="file-path-wrapper">
+            <input
+              class="file-path validate"
+              type="text"
+              style="margin-bottom: 0"
+            />
+          </div>
+        </div>
+      </form>
+      <!-- <input
+        type="file"
+        id="importarArquivo"
+        onchange="importarBackup(event)"
+      /> -->
+    </div>
+
+    <!--JavaScript at end of body for optimized loading-->
+    <script
+      type="text/javascript"
+      src="materialize/js/materialize.min.js"
+    ></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const elems = document.querySelectorAll("select");
+        const instances = M.FormSelect.init(elems, {});
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const options = {
+          autoClose: true,
+          format: "yyyy-mm-dd",
+          showClearBtn: true,
+          onSelect: (v) => console.log(v.getMonth()),
+          i18n: {
+            cancel: "Cancelar",
+            clear: "Limpar",
+            done: "Ok",
+            months: [
+              "Janeiro",
+              "Fevereiro",
+              "Março",
+              "Abril",
+              "Maio",
+              "Junho",
+              "Julho",
+              "Agosto",
+              "Setembro",
+              "Outubro",
+              "Novembro",
+              "Dezembro",
+            ],
+            monthsShort: [
+              "Jan",
+              "Fev",
+              "Mar",
+              "Abr",
+              "Mai",
+              "Jun",
+              "Jul",
+              "Ago",
+              "Set",
+              "Out",
+              "Nov",
+              "Dez",
+            ],
+            weekdays: [
+              "Domingo",
+              "Segunda",
+              "Terça",
+              "Quarta",
+              "Quinta",
+              "Sexta",
+              "Sábado",
+            ],
+            weekdaysShort: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+            weekdaysAbbrev: ["D", "S", "T", "Q", "Q", "S", "S"],
+          },
+        };
+        const elems = document.querySelectorAll(".datepicker");
+        const instances = M.Datepicker.init(elems, options);
+        const monthElems = document.querySelectorAll(".monthdatepicker");
+        const monthInstances = M.Datepicker.init(
+          monthElems,
+          Object.assign(options, { format: "yyyy-mm" })
+        );
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        M.updateTextFields();
+      });
+    </script>
+
+    <script>
+      let lancamentos =
+        JSON.parse(localStorage.getItem("lancamentos_v3")) || [];
+
+      let grafico = null;
+
+      function salvar() {
+        localStorage.setItem("lancamentos_v3", JSON.stringify(lancamentos));
+      }
+
+      function adicionar() {
+        const data = document.getElementById("data").value;
+
+        const descricao = document.getElementById("descricao").value;
+
+        const valor = parseFloat(document.getElementById("valor").value);
+
+        const tipo = document.getElementById("tipo").value;
+
+        const categoria = document.getElementById("categoria").value;
+
+        if (!data || !descricao || !valor)
+          return alert("Preencha todos os campos");
+
+        if (categoria == "Todos")
+          return alert("Todos não é categoria, apenas filtro.");
+
+        lancamentos.push({
+          id: Date.now(),
+          data,
+          descricao,
+          valor,
+          tipo,
+          categoria,
+          pago: false,
+        });
+
+        salvar();
+
+        limpar();
+
+        carregar();
+      }
+
+      function limpar() {
+        document.getElementById("data").value = "";
+        document.getElementById("descricao").value = "";
+        document.getElementById("valor").value = "";
+      }
+
+      function marcarPago(id) {
+        lancamentos = lancamentos.map((l) => {
+          if (l.id === id) l.pago = !l.pago;
+
+          return l;
+        });
+
+        salvar();
+
+        carregar();
+      }
+
+      function remover(id) {
+        if (!confirm("Excluir lançamento?")) return;
+
+        lancamentos = lancamentos.filter((l) => l.id !== id);
+
+        salvar();
+
+        carregar();
+      }
+
+      function carregar() {
+        const lista = document.getElementById("lista");
+
+        lista.innerHTML = "";
+
+        let totalReceitas = 0;
+        let totalDespesas = 0;
+
+        // let saldoFuturo = 0;
+
+        let receitasPagas = 0;
+        let despesasPagas = 0;
+
+        const dataInicio = document.getElementById("dataInicio").value;
+
+        const dataFim = document.getElementById("dataFim").value;
+
+        const categoria = document.getElementById("categoria").value;
+
+        let dadosFiltrados = lancamentos;
+
+        if (dataInicio || dataFim) {
+          dadosFiltrados = lancamentos.filter((l) => {
+            const dateStart = dataInicio || "1970-01-01";
+            const dateEnd = dataFim || "275760-12-31";
+
+            return (
+              l.data >= dateStart &&
+              l.data <= dateEnd &&
+              (l.categoria == categoria || categoria == "Todos")
+            );
+          });
+        }
+
+        dadosFiltrados
+          .sort((a, b) => new Date(a.data) - new Date(b.data))
+
+          .forEach((l) => {
+            if (l.tipo === "Receita") totalReceitas += l.valor;
+            else totalDespesas += l.valor;
+
+            if (l.pago && l.tipo === "Despesa") despesasPagas += l.valor;
+            if (l.pago && l.tipo === "Receita") receitasPagas += l.valor;
+
+            // if (!l.pago && l.tipo === "Despesa") saldoFuturo -= l.valor;
+
+            lista.innerHTML += `
+
+            <tr class="${l.tipo === "Receita" ? "receita" : "despesa"}">
+
+            <td>${l.data.split("-").reverse().join("/")}</td>
+
+            <td>${l.descricao}</td>
+
+            <td>${l.categoria}</td>
+
+            <td>R$ ${l.valor.toFixed(2)}</td>
+
+            <td>${l.tipo}</td>
+
+            <td>
+
+            <p>
+            <label>
+            <input type="checkbox"
+
+            ${l.pago ? "checked='checked'" : ""}
+
+            onclick="marcarPago(${l.id})"
+
+            >
+            <span />
+            </label>
+            </p>
+
+            </td>
+
+            <td>
+
+            <button class="btn-flat btn-floating btn-red waves-effect waves-light indigo lighten-5" onclick="remover(${
+              l.id
+            })">
+
+            <i class="material-icons dp48 red-text">delete_forever</i>
+
+            </button>
+
+            </td>
+
+            </tr>
+
+            `;
+
+            M.updateTextFields();
+          });
+
+        const saldoAtual = receitasPagas - despesasPagas;
+
+        document.getElementById("totalReceitas").innerText =
+          totalReceitas.toFixed(2);
+
+        document.getElementById("totalDespesas").innerText =
+          totalDespesas.toFixed(2);
+
+        document.getElementById("saldo").innerText = saldoAtual.toFixed(2);
+
+        document.getElementById("saldoFuturo").innerText = (
+          totalReceitas - totalDespesas
+        ).toFixed(2);
+
+        gerarGrafico(dadosFiltrados);
+      }
+
+      function gerarGrafico(dados) {
+        let meses = {};
+
+        dados.forEach((l) => {
+          let mes = l.data.substring(0, 7);
+
+          if (!meses[mes]) meses[mes] = { receita: 0, despesa: 0 };
+
+          if (l.tipo === "Receita") meses[mes].receita += l.valor;
+          else meses[mes].despesa += l.valor;
+        });
+
+        console.log("dados do gráfico", meses);
+
+        let labels = Object.keys(meses);
+
+        let receitas = labels.map((m) => meses[m].receita);
+
+        let despesas = labels.map((m) => meses[m].despesa);
+
+        if (grafico) grafico.destroy();
+
+        grafico = new Chart(
+          document.getElementById("grafico"),
+
+          {
+            type: "bar",
+
+            data: {
+              labels: labels.map((k) => k.split("-").reverse().join("/")),
+
+              datasets: [
+                {
+                  label: "Receitas",
+                  data: receitas,
+                },
+
+                {
+                  label: "Despesas",
+                  data: despesas,
+                },
+              ],
+            },
+          }
+        );
+      }
+
+      function exportarBackup() {
+        const dados = JSON.stringify(lancamentos);
+
+        const blob = new Blob([dados], { type: "application/json" });
+
+        const link = document.createElement("a");
+
+        link.href = URL.createObjectURL(blob);
+
+        link.download = "backup_financeiro_v3.json";
+
+        link.click();
+      }
+
+      function importarBackup(event) {
+        if (
+          confirm("Todos os dados atuais serão perdidos, deseja continuar?")
+        ) {
+          const arquivo = event.target.files[0];
+
+          if (!arquivo) return;
+
+          const leitor = new FileReader();
+
+          leitor.onload = function (e) {
+            lancamentos = JSON.parse(e.target.result);
+
+            salvar();
+
+            carregar();
+          };
+
+          leitor.readAsText(arquivo);
+        }
+      }
+
+      carregar();
+    </script>
+  </body>
+</html>
