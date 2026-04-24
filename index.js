@@ -7,6 +7,57 @@ let grafico = null;
 let saldoReal = false;
 let isShowingCadastro = true;
 
+function navigateToMonth(month) {
+  const [year, monthNum] = month.split("-");
+
+  document.getElementById("dataInicio").value = `${year}-${monthNum}-01`;
+  const dataFim = new Date(year, parseInt(monthNum), 0);
+  document.getElementById("dataFim").value =
+    `${String(dataFim.getFullYear())}-${String(dataFim.getMonth() + 1).padStart(2, "0")}-${String(dataFim.getDate()).padStart(2, "0")}`;
+
+  carregar();
+}
+
+function nextMonth() {
+  const dataInicio = document.getElementById("dataInicio").value;
+  const dataFim = document.getElementById("dataFim").value;
+
+  if (!dataInicio || !dataFim) return;
+
+  const [yearInicio, monthInicio] = dataInicio.split("/").reverse().map(Number);
+  const [yearFim, monthFim] = dataFim.split("/").reverse().map(Number);
+
+  const nextMonthInicio = new Date(yearInicio, monthInicio, 1);
+  const nextMonthFim = new Date(yearFim, monthFim + 1, 0);
+
+  document.getElementById("dataInicio").value =
+    `01/${String(nextMonthInicio.getMonth() + 1).padStart(2, "0")}/${nextMonthInicio.getFullYear()}`;
+  document.getElementById("dataFim").value =
+    `${String(nextMonthFim.getDate()).padStart(2, "0")}/${String(nextMonthFim.getMonth() + 1).padStart(2, "0")}/${nextMonthFim.getFullYear()}`;
+
+  carregar();
+}
+
+function prevMonth() {
+  const dataInicio = document.getElementById("dataInicio").value;
+  const dataFim = document.getElementById("dataFim").value;
+
+  if (!dataInicio || !dataFim) return;
+
+  const [yearInicio, monthInicio] = dataInicio.split("/").reverse().map(Number);
+  const [yearFim, monthFim] = dataFim.split("/").reverse().map(Number);
+
+  const nextMonthInicio = new Date(yearInicio, monthInicio, 1);
+  const nextMonthFim = new Date(yearFim, monthFim, 0);
+
+  document.getElementById("dataInicio").value =
+    `01/${String(nextMonthInicio.getMonth() - 1).padStart(2, "0")}/${nextMonthInicio.getFullYear()}`;
+  document.getElementById("dataFim").value =
+    `${String(nextMonthFim.getDate()).padStart(2, "0")}/${String(nextMonthFim.getMonth()).padStart(2, "0")}/${nextMonthFim.getFullYear()}`;
+
+  carregar();
+}
+
 function showSaldoReal(isReal) {
   saldoReal = isReal;
   carregar();
