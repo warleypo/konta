@@ -29,6 +29,12 @@
         padding: 8px 20px !important;
       }
 
+      @media screen and (max-width: 600px) {
+        .pb-m {
+          padding-bottom: 3rem !important;
+        }
+      }
+
       .mr-2 {
         margin-right: 8px;
       }
@@ -51,19 +57,19 @@
           <div class="card-image">
             <img src="konta_banner.png" alt="Logomarca konta" />
           </div>
-          <div class="input-field col s12 m6 l4">
+          <div class="input-field col s12 m6 l4 show-hide">
             <input class="validate datepicker" type="text" id="data" />
             <label class="active" for="data">Data</label>
           </div>
-          <div class="input-field col s12 m6 l4">
+          <div class="input-field col s12 m6 l4 show-hide">
             <input type="text" id="descricao" class="validate" />
             <label class="active" for="descricao">Descrição</label>
           </div>
-          <div class="input-field col s12 m6 l4">
+          <div class="input-field col s12 m6 l4 show-hide">
             <input type="number" class="validate" id="valor" step="0.01" />
             <label class="active" for="valor">Valor</label>
           </div>
-          <div class="input-field col s12 m6 l4">
+          <div class="input-field col s12 m6 l4 show-hide">
             <i class="material-icons prefix">tune</i>
             <select class="icons validate" id="tipo" onchange="carregar()">
               <optgroup label="Tipo/Filtro">
@@ -75,7 +81,7 @@
               </optgroup>
             </select>
           </div>
-          <div class="input-field col s12 m6 l4">
+          <div class="input-field col s12 m6 l4 show-hide">
             <i class="material-icons prefix">tune</i>
             <select id="categoria" onchange="carregar()">
               <optgroup label="Categoria/Filtro">
@@ -92,9 +98,10 @@
               </optgroup>
             </select>
           </div>
+
           <div class="input-field col s12 m6 l4">
             <button
-              class="btn waves-effect waves-light right"
+              class="btn waves-effect waves-light right show-hide"
               type="button"
               id="adicionarBtn"
               onclick="adicionar()"
@@ -102,6 +109,18 @@
             >
               Gravar
               <i class="material-icons right">save</i>
+            </button>
+            <button
+              class="btn-flat btn-floating waves-effect secondary-content left"
+              type="button"
+              onclick="showHideCadastro()"
+              style="display: inline-block"
+            >
+              <i
+                class="material-icons blue-text text-darken-4 right"
+                id="collapseCadastro"
+                >expand_less</i
+              >
             </button>
 
             <button
@@ -129,31 +148,44 @@
       </div>
 
       <div class="row">
-        <div class="col s12 m4 l3">
+        <div class="col s12 m3">
           <h4 class="blue-text text-darken-4">Resumo</h4>
         </div>
 
-        <div class="col s12 m8 l9">
-          <div class="col s12 m6 grey-text">
-            De:
+        <div class="col s12 m9 l9 pb-m">
+          <div class="col s12 m4 grey-text">
             <div class="input-field inline">
               <input
                 type="text"
                 class="datepicker"
                 id="dataInicio"
+                placeholder="De"
                 onchange="carregar()"
               />
             </div>
           </div>
-          <div class="col s12 m6 grey-text">
-            Até:
+          <div class="col s12 m4 grey-text">
             <div class="input-field inline">
               <input
                 type="text"
                 class="datepicker"
+                placeholder="Até"
                 id="dataFim"
                 onchange="carregar()"
               />
+            </div>
+          </div>
+          <div class="col s12 m4 grey-text">
+            <div class="input-field">
+              <label>
+                <input
+                  class="filled-in"
+                  id="saldoReal"
+                  type="checkbox"
+                  onclick="showSaldoReal(this.checked)"
+                />
+                <span>Saldo Real</span>
+              </label>
             </div>
           </div>
         </div>

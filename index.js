@@ -4,6 +4,31 @@ let lancamentos = JSON.parse(localStorage.getItem(db)) || [];
 
 let grafico = null;
 
+let saldoReal = false;
+let isShowingCadastro = true;
+
+function showSaldoReal(isReal) {
+  saldoReal = isReal;
+  carregar();
+}
+
+function showHideCadastro() {
+  limpar();
+  isShowingCadastro = !isShowingCadastro;
+
+  if (isShowingCadastro) {
+    Array.from(
+      document.querySelectorAll("form[name=cadastro] .show-hide"),
+    ).forEach((i) => (i.style.display = ""));
+    document.getElementById("collapseCadastro").innerText = "expand_less";
+  } else {
+    Array.from(
+      document.querySelectorAll("form[name=cadastro] .show-hide"),
+    ).forEach((i) => (i.style.display = "none"));
+    document.getElementById("collapseCadastro").innerText = "expand_more";
+  }
+}
+
 function formatarDataEN(data) {
   return data.split("/").reverse().join("-");
 }
@@ -72,6 +97,7 @@ function marcarPago(id) {
 }
 
 function alterar(id) {
+  if (!isShowingCadastro) showHideCadastro();
   const lancamento = lancamentos.find((l) => l.id === id);
 
   if (!lancamento) return alert("Lançamento não encontrado");
@@ -175,6 +201,14 @@ function carregar() {
     const dateStart = dataInicio || "1970-01-01";
     const dateEnd = dataFim || "275760-12-31";
 
+    if (saldoReal && l.data <= dateEnd) {
+      if (l.tipo === "Receita") totalReceitas += l.valor;
+      else totalDespesas += l.valor;
+
+      if (l.pago && l.tipo === "Despesa") despesasPagas += l.valor;
+      if (l.pago && l.tipo === "Receita") receitasPagas += l.valor;
+    }
+
     return (
       l.data >= dateStart &&
       l.data <= dateEnd &&
@@ -188,11 +222,13 @@ function carregar() {
     .sort((a, b) => new Date(a.data) - new Date(b.data))
 
     .forEach((l) => {
-      if (l.tipo === "Receita") totalReceitas += l.valor;
-      else totalDespesas += l.valor;
+      if (!saldoReal) {
+        if (l.tipo === "Receita") totalReceitas += l.valor;
+        else totalDespesas += l.valor;
 
-      if (l.pago && l.tipo === "Despesa") despesasPagas += l.valor;
-      if (l.pago && l.tipo === "Receita") receitasPagas += l.valor;
+        if (l.pago && l.tipo === "Despesa") despesasPagas += l.valor;
+        if (l.pago && l.tipo === "Receita") receitasPagas += l.valor;
+      }
 
       lista.innerHTML += `
 
