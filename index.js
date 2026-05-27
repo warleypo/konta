@@ -149,21 +149,22 @@ function adicionar() {
   if (categoria === "Todos" || tipo === "Todos")
     return alert("Todos não é uma opção válida para tipo/categoria.");
 
-  lancamentos.push({
-    id: Date.now(),
+  const novoLancamento = {
     data,
     descricao,
     valor,
     tipo,
     categoria,
     pago: false,
+  };
+
+  const id = salvarFirebase(novoLancamento).then((id) => {
+    if (id === -1) return alert("Erro ao salvar lançamento.");
+    novoLancamento.id = id;
+    lancamentos.push(novoLancamento);
+    limpar();
+    carregar();
   });
-
-  salvar();
-
-  limpar();
-
-  carregar();
 }
 
 function limpar() {
@@ -588,7 +589,7 @@ window.logout = logout;
 
 //salvar dados no firebase
 async function salvarFirebase(lancamento) {
-  console.log("hora servidor", serverTimestamp());
+  // console.log("hora servidor", serverTimestamp());
 
   if (!usuarioAtual) return alert("Faça login para salvar os dados.");
 
@@ -600,11 +601,17 @@ async function salvarFirebase(lancamento) {
       usuarioAtual.uid,
       "lancamentos",
     );
+    const lancamentoComData = {
+      ...lancamento,
+      data: new Date(lancamento.data),
+    };
     const docRef = await addDoc(colecao, lancamento);
 
     console.log("Lançamento salvo com ID:", docRef.id);
+    return docRef.id;
   } catch (error) {
-    alert("Erro ao salvar no Firebase: " + error.message);
+    return -1;
+    console.log("Erro ao salvar no Firebase: " + error.message);
   }
 }
 
