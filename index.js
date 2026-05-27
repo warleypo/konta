@@ -1,5 +1,37 @@
 import { firebaseConfig } from "./firebase.js";
 
+const {
+  initializeApp,
+
+  getFirestore,
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  serverTimestamp,
+
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+} = window.firebaseModules;
+
+const app = initializeApp(firebaseConfig);
+
+const firestore = getFirestore(app);
+
+const auth = getAuth(app);
+
+const provider = new GoogleAuthProvider();
+
+let usuarioAtual = null;
+
+let colecao = null;
+
 const db = "konta-db";
 
 let lancamentos = JSON.parse(localStorage.getItem(db)) || [];
@@ -440,12 +472,113 @@ carregar();
 //dados de login
 async function loginGoogle() {
   try {
-    await firebase
-      .auth()
-      .signInWithPopup(new firebase.auth.GoogleAuthProvider());
-    alert("Login bem-sucedido!");
+    await signInWithPopup(auth, provider);
   } catch (error) {
-    console.error("Erro ao fazer login:", error.message);
-    alert("Erro ao fazer login. Veja o console para detalhes.");
+    alert("Erro no login: " + error.message);
   }
 }
+
+function logout() {
+  signOut(auth);
+}
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    usuarioAtual = user;
+    colecao = collection(firestore, "konta", user.uid, "lancamentos");
+    console.log("Usuário logado:", user);
+
+    let lanc = [];
+    onSnapshot(colecao, (snapshot) => {
+      snapshot.forEach((doc) => {
+        lanc[doc.id] = { id: doc.id, ...doc.data() };
+      });
+    });
+
+    console.log("Lançamentos do usuário:", lanc);
+  }
+});
+
+window.loginGoogle = loginGoogle;
+window.logout = logout;
+
+//salvar dados no firebase
+async function salvarFirebase(lancamento) {
+  console.log("hora servidor", serverTimestamp());
+
+  if (!usuarioAtual) return alert("Faça login para salvar os dados.");
+
+  try {
+    //salva
+    const colecao = collection(
+      firestore,
+      "konta",
+      usuarioAtual.uid,
+      "lancamentos",
+    );
+    const docRef = await addDoc(colecao, lancamento);
+
+    console.log("Lançamento salvo com ID:", docRef.id);
+  } catch (error) {
+    alert("Erro ao salvar no Firebase: " + error.message);
+  }
+}
+
+window.salvarFirebase = salvarFirebase;
+
+//alterar no firebase
+async function alterarFirebase(id, lancamento) {
+  if (!usuarioAtual) return alert("Faça login para alterar os dados.");
+
+  try {
+    const docRef = doc(firestore, "konta", usuarioAtual.uid, "lancamentos", id);
+    await updateDoc(docRef, lancamento);
+
+    console.log("Lançamento alterado com ID:", id);
+  } catch (error) {
+    alert("Erro ao alterar no Firebase: " + error.message);
+  }
+}
+
+window.alterarFirebase = alterarFirebase;
+
+//remover
+async function removerFirebase(id) {
+  if (!usuarioAtual) return alert("Faça login para remover os dados.");
+
+  try {
+    const docRef = doc(firestore, "konta", usuarioAtual.uid, "lancamentos", id);
+    await deleteDoc(docRef);
+
+    console.log("Lançamento removido com ID:", id);
+  } catch (error) {
+    alert("Erro ao remover no Firebase: " + error.message);
+  }
+}
+
+window.removerFirebase = removerFirebase;
+
+//export localstorage para firebase
+async function exportarParaFirebase() {
+  if (!usuarioAtual) return alert("Faça login para exportar os dados.");
+
+  try {
+    const colecao = collection(
+      firestore,
+      "konta",
+      usuarioAtual.uid,
+      "lancamentos",
+    );
+
+    for (const lancamento of lancamentos) {
+      // await addDoc(colecao, lancamento);
+      console.log("Exportando lançamento para Firebase:", lancamento);
+    }
+
+    alert("Dados exportados para Firebase com sucesso!");
+  } catch (error) {
+    alert("Erro ao exportar para Firebase: " + error.message);
+  }
+}
+
+window.exportarParaFirebase = exportarParaFirebase;

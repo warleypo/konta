@@ -370,6 +370,50 @@
 
     <script type="text/javascript" src="components.js"></script>
 
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        updateDoc,
+        deleteDoc,
+        doc,
+        getDocs,
+        onSnapshot,
+        serverTimestamp,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+      window.firebaseModules = {
+        initializeApp,
+
+        getFirestore,
+        collection,
+        addDoc,
+        updateDoc,
+        deleteDoc,
+        doc,
+        getDocs,
+        onSnapshot,
+        serverTimestamp,
+
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        signOut,
+        onAuthStateChanged,
+      };
+    </script>
+
     <script type="module" src="index.js"></script>
   </body>
 </html>
