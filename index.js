@@ -571,7 +571,9 @@ async function exportarParaFirebase() {
     );
 
     for (const lancamento of lancamentos) {
-      // await addDoc(colecao, lancamento);
+      lancamento.data = new Date(lancamento.data);
+      delete lancamento.id; // Remove o ID local para evitar conflitos com o ID do Firestore
+      await addDoc(colecao, lancamento);
       console.log("Exportando lançamento para Firebase:", lancamento);
     }
 
