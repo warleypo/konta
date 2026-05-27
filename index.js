@@ -1,3 +1,5 @@
+import { firebaseConfig } from "./firebase.js";
+
 const db = "konta-db";
 
 let lancamentos = JSON.parse(localStorage.getItem(db)) || [];
@@ -434,3 +436,16 @@ function importarBackup(event) {
 }
 
 carregar();
+
+//dados de login
+async function loginGoogle() {
+  try {
+    await firebase
+      .auth()
+      .signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    alert("Login bem-sucedido!");
+  } catch (error) {
+    console.error("Erro ao fazer login:", error.message);
+    alert("Erro ao fazer login. Veja o console para detalhes.");
+  }
+}
