@@ -12,6 +12,9 @@ const {
   getDocs,
   onSnapshot,
   serverTimestamp,
+  query,
+  where,
+  orderBy,
 
   getAuth,
   GoogleAuthProvider,
@@ -34,7 +37,7 @@ let colecao = null;
 
 const db = "konta-db";
 
-let lancamentos = JSON.parse(localStorage.getItem(db)) || [];
+let lancamentos = [];
 
 let grafico = null;
 
@@ -91,11 +94,15 @@ function prevMonth() {
 
   carregar();
 }
+window.prevMonth = prevMonth;
+window.nextMonth = nextMonth;
+window.navigateToMonth = navigateToMonth;
 
 function showSaldoReal(isReal) {
   saldoReal = isReal;
   carregar();
 }
+window.showSaldoReal = showSaldoReal;
 
 function showHideCadastro() {
   limpar();
@@ -118,8 +125,12 @@ function formatarDataEN(data) {
   return data.split("/").reverse().join("-");
 }
 
-function salvar() {
-  localStorage.setItem(db, JSON.stringify(lancamentos));
+function salvar(id) {
+  // localStorage.setItem(db, JSON.stringify(lancamentos));
+  alterarFirebase(
+    id,
+    lancamentos.find((l) => l.id === id),
+  );
 }
 
 function adicionar() {
@@ -170,13 +181,12 @@ function limpar() {
 }
 
 function marcarPago(id) {
-  lancamentos = lancamentos.map((l) => {
-    if (l.id === id) l.pago = !l.pago;
+  const lancamento = lancamentos.find((l) => l.id === id);
 
-    return l;
-  });
+  if (!lancamento) return alert("Lançamento não encontrado");
+  lancamento.pago = !lancamento.pago;
 
-  salvar();
+  alterarFirebase(id, lancamento);
 
   carregar();
 }
@@ -231,19 +241,15 @@ function alterarLancamento(id) {
   if (categoria === "Todos" || tipo === "Todos")
     return alert("Todos não é uma opção válida para tipo/categoria.");
 
-  lancamentos = lancamentos.map((l) => {
-    if (l.id === id) {
-      l.data = data;
-      l.descricao = descricao;
-      l.valor = valor;
-      l.tipo = tipo;
-      l.categoria = categoria;
-    }
+  const lancamento = lancamentos.find((l) => l.id === id);
 
-    return l;
-  });
+  lancamento.data = data;
+  lancamento.descricao = descricao;
+  lancamento.valor = valor;
+  lancamento.tipo = tipo;
+  lancamento.categoria = categoria;
 
-  salvar();
+  alterarFirebase(id, lancamento);
 
   limpar();
 
@@ -254,8 +260,7 @@ function remover(id) {
   if (!confirm("Excluir lançamento?")) return;
 
   lancamentos = lancamentos.filter((l) => l.id !== id);
-
-  salvar();
+  removerFirebase(id);
 
   carregar();
 }
@@ -263,7 +268,7 @@ function remover(id) {
 function carregar() {
   const lista = document.getElementById("lista");
 
-  lista.innerHTML = "";
+  // lista.innerHTML = "";
 
   let totalReceitas = 0;
   let totalDespesas = 0;
@@ -278,6 +283,8 @@ function carregar() {
 
   const categoria = document.getElementById("categoria").value;
   const tipo = document.getElementById("tipo").value;
+
+  // console.log("lancamentos", lancamentos);
 
   let dadosFiltrados = lancamentos;
 
@@ -303,6 +310,8 @@ function carregar() {
   });
   // }
 
+  const fragment = document.createDocumentFragment();
+
   dadosFiltrados
     .sort((a, b) => new Date(a.data) - new Date(b.data))
 
@@ -314,64 +323,135 @@ function carregar() {
         if (l.pago && l.tipo === "Despesa") despesasPagas += l.valor;
         if (l.pago && l.tipo === "Receita") receitasPagas += l.valor;
       }
+      const tr = document.createElement("tr");
+      const tdData = document.createElement("td");
+      tdData.textContent = l.data.split("-").reverse().join("/");
 
-      lista.innerHTML += `
+      const tdDescricao = document.createElement("td");
+      tdDescricao.textContent = l.descricao;
 
-            <tr class="${l.tipo === "Receita" ? "receita" : "despesa"}">
+      const tdCategoria = document.createElement("td");
+      tdCategoria.textContent = l.categoria;
 
-              <td>${l.data.split("-").reverse().join("/")}</td>
+      const tdValor = document.createElement("td");
+      tdValor.textContent = `R$ ${l.valor.toFixed(2)}`;
+      tdValor.className =
+        l.tipo === "Receita"
+          ? "blue-text text-darken-4"
+          : "red-text text-darken-2";
 
-              <td>${l.descricao}</td>
+      const tdTipo = document.createElement("td");
+      tdTipo.textContent = l.tipo;
 
-              <td>${l.categoria}</td>
+      const tdPago = document.createElement("td");
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      if (l.pago) checkbox.checked = true;
+      checkbox.onclick = function () {
+        marcarPago(l.id);
+      };
+      const span = document.createElement("span");
+      label.appendChild(checkbox);
+      label.appendChild(span);
+      tdPago.appendChild(label);
 
-              <td class="${l.tipo === "Receita" ? "blue-text text-darken-4" : "red-text text-darken-2"}">R$ ${l.valor.toFixed(2)}</td>
+      const tdAcoes = document.createElement("td");
+      const btnAlterar = document.createElement("button");
+      btnAlterar.className =
+        "btn-flat btn-floating btn-red waves-effect waves-light indigo lighten-5";
+      btnAlterar.onclick = function () {
+        alterar(l.id);
+      };
+      const iconAlterar = document.createElement("i");
+      iconAlterar.className = "material-icons dp48 amber-text text-darken-3";
+      iconAlterar.textContent = "edit";
+      btnAlterar.appendChild(iconAlterar);
 
-              <td>${l.tipo}</td>
+      const btnRemover = document.createElement("button");
+      btnRemover.className =
+        "btn-flat btn-floating btn-red waves-effect waves-light indigo lighten-5";
+      btnRemover.onclick = function () {
+        remover(l.id);
+      };
+      const iconRemover = document.createElement("i");
+      iconRemover.className = "material-icons dp48 red-text";
+      iconRemover.textContent = "delete_forever";
+      btnRemover.appendChild(iconRemover);
 
-              <td>
+      tdAcoes.appendChild(btnAlterar);
+      tdAcoes.appendChild(btnRemover);
 
-                <p>
-                  <label>
-                    <input type="checkbox"
+      tr.className = l.tipo === "Receita" ? "receita" : "despesa";
 
-                    ${l.pago ? "checked='checked'" : ""}
+      tr.appendChild(tdData);
+      tr.appendChild(tdDescricao);
+      tr.appendChild(tdCategoria);
+      tr.appendChild(tdValor);
+      tr.appendChild(tdTipo);
+      tr.appendChild(tdPago);
+      tr.appendChild(tdAcoes);
 
-                    onclick="marcarPago(${l.id})"
+      fragment.appendChild(tr);
+      // const tr = `
 
-                    >
-                    <span />
-                  </label>
-                </p>
+      //       <tr class="${l.tipo === "Receita" ? "receita" : "despesa"}">
 
-              </td>
+      //         <td>${l.data.split("-").reverse().join("/")}</td>
 
-              <td>
+      //         <td>${l.descricao}</td>
 
-              <button class="btn-flat btn-floating btn-red waves-effect waves-light indigo lighten-5" onclick="alterar(${
-                l.id
-              })">
+      //         <td>${l.categoria}</td>
 
-              <i class="material-icons dp48 amber-text text-darken-3">edit</i>
+      //         <td class="${l.tipo === "Receita" ? "blue-text text-darken-4" : "red-text text-darken-2"}">R$ ${l.valor.toFixed(2)}</td>
 
-              <button class="btn-flat btn-floating btn-red waves-effect waves-light indigo lighten-5" onclick="remover(${
-                l.id
-              })">
+      //         <td>${l.tipo}</td>
 
-              <i class="material-icons dp48 red-text">delete_forever</i>
+      //         <td>
 
-              </button>
+      //           <p>
+      //             <label>
+      //               <input type="checkbox"
 
-              </td>
+      //               ${l.pago ? "checked='checked'" : ""}
 
-            </tr>
+      //               onclick="marcarPago(${l.id})"
 
-            `;
+      //               >
+      //               <span />
+      //             </label>
+      //           </p>
 
-      M.updateTextFields();
+      //         </td>
+
+      //         <td>
+
+      //         <button class="btn-flat btn-floating btn-red waves-effect waves-light indigo lighten-5" onclick="alterar(${
+      //           l.id
+      //         })">
+
+      //         <i class="material-icons dp48 amber-text text-darken-3">edit</i>
+
+      //         <button class="btn-flat btn-floating btn-red waves-effect waves-light indigo lighten-5" onclick="remover(${
+      //           l.id
+      //         })">
+
+      //         <i class="material-icons dp48 red-text">delete_forever</i>
+
+      //         </button>
+
+      //         </td>
+
+      //       </tr>
+
+      //       `;
+      // fragment.appendChild(tr);
     });
-
   const saldoAtual = receitasPagas - despesasPagas;
+
+  lista.innerHTML = "";
+  lista.appendChild(fragment);
+  // M.updateTextFields();
 
   document.getElementById("totalReceitas").innerText = totalReceitas.toFixed(2);
 
@@ -398,7 +478,7 @@ function gerarGrafico(dados) {
     else meses[mes].despesa += l.valor;
   });
 
-  console.log("dados do gráfico", meses);
+  // console.log("dados do gráfico", meses);
 
   let labels = Object.keys(meses);
 
@@ -467,6 +547,15 @@ function importarBackup(event) {
   }
 }
 
+window.exportarBackup = exportarBackup;
+window.importarBackup = importarBackup;
+window.showHideCadastro = showHideCadastro;
+window.carregar = carregar;
+window.marcarPago = marcarPago;
+window.alterar = alterar;
+window.remover = remover;
+window.limpar = limpar;
+window.adicionar = adicionar;
 carregar();
 
 //dados de login
@@ -488,14 +577,9 @@ onAuthStateChanged(auth, (user) => {
     colecao = collection(firestore, "konta", user.uid, "lancamentos");
     console.log("Usuário logado:", user);
 
-    let lanc = [];
-    onSnapshot(colecao, (snapshot) => {
-      snapshot.forEach((doc) => {
-        lanc[doc.id] = { id: doc.id, ...doc.data() };
-      });
-    });
+    obterLancamentosFirebase();
 
-    console.log("Lançamentos do usuário:", lanc);
+    // console.log("Lançamentos do usuário:", lanc);
   }
 });
 
@@ -531,8 +615,12 @@ async function alterarFirebase(id, lancamento) {
   if (!usuarioAtual) return alert("Faça login para alterar os dados.");
 
   try {
+    const lancamentoAlterado = {
+      ...lancamento,
+      data: new Date(lancamento.data),
+    };
     const docRef = doc(firestore, "konta", usuarioAtual.uid, "lancamentos", id);
-    await updateDoc(docRef, lancamento);
+    await updateDoc(docRef, lancamentoAlterado);
 
     console.log("Lançamento alterado com ID:", id);
   } catch (error) {
@@ -559,8 +647,35 @@ async function removerFirebase(id) {
 window.removerFirebase = removerFirebase;
 
 //export localstorage para firebase
-async function exportarParaFirebase() {
-  if (!usuarioAtual) return alert("Faça login para exportar os dados.");
+// async function exportarParaFirebase() {
+//   if (!usuarioAtual) return alert("Faça login para exportar os dados.");
+
+//   try {
+//     const colecao = collection(
+//       firestore,
+//       "konta",
+//       usuarioAtual.uid,
+//       "lancamentos",
+//     );
+
+//     for (const lancamento of lancamentos) {
+//       lancamento.data = new Date(lancamento.data);
+//       delete lancamento.id; // Remove o ID local para evitar conflitos com o ID do Firestore
+//       await addDoc(colecao, lancamento);
+//       console.log("Exportando lançamento para Firebase:", lancamento);
+//     }
+
+//     alert("Dados exportados para Firebase com sucesso!");
+//   } catch (error) {
+//     alert("Erro ao exportar para Firebase: " + error.message);
+//   }
+// }
+
+// window.exportarParaFirebase = exportarParaFirebase;
+
+//obter lançamentos do firebase por data
+async function obterLancamentosFirebase() {
+  if (!usuarioAtual) return alert("Faça login para obter os dados.");
 
   try {
     const colecao = collection(
@@ -569,18 +684,36 @@ async function exportarParaFirebase() {
       usuarioAtual.uid,
       "lancamentos",
     );
+    const snapshot = await getDocs(colecao);
+    // query(
+    //   colecao,
+    //   where("data", ">=", new Date("2026-05-01")),
+    //   orderBy("data", "asc"),
+    //   where("data", "<=", new Date("2026-05-31")),
+    // ),
+    // );
 
-    for (const lancamento of lancamentos) {
-      lancamento.data = new Date(lancamento.data);
-      delete lancamento.id; // Remove o ID local para evitar conflitos com o ID do Firestore
-      await addDoc(colecao, lancamento);
-      console.log("Exportando lançamento para Firebase:", lancamento);
-    }
+    lancamentos = [];
+    await snapshot.forEach((doc) => {
+      lancamentos.push({
+        id: doc.id,
+        data: doc.data().data.toDate().toISOString().substring(0, 10),
+        descricao: doc.data().descricao,
+        valor: doc.data().valor,
+        tipo: doc.data().tipo,
+        categoria: doc.data().categoria,
+        pago: doc.data().pago,
+      });
+    });
 
-    alert("Dados exportados para Firebase com sucesso!");
+    // console.log("Lançamentos obtidos do Firebase:", lancamentos);
+    // localStorage.setItem(db, JSON.stringify(lancamentos));
+
+    // console.log("Lançamentos obtidos do Firebase:", lancamentos);
+    carregar();
   } catch (error) {
-    alert("Erro ao exportar para Firebase: " + error.message);
+    alert("Erro ao obter dados do Firebase: " + error.message);
   }
 }
 
-window.exportarParaFirebase = exportarParaFirebase;
+window.obterLancamentosFirebase = obterLancamentosFirebase;
