@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="pt-br" class="indigo lighten-5">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Konta - Controle Financeiro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Gerenciador financeiro simples e eficiente"
+    />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Material Icons -->
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+
+    <!-- Materialize CSS -->
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="materialize/css/materialize.min.css"
+      media="screen,projection"
+    />
+
+    <style>
+      :root {
+        --primary-color: #1a237e;
+        --accent-color: #ff6f00;
+        --success-color: #4caf50;
+        --danger-color: #f44336;
+      }
+
+      body {
+        background-color: #f5f5f5;
+      }
+
+      .rounded-m {
+        border-radius: 20px;
+      }
+
+      .p-m {
+        padding: 8px 20px !important;
+      }
+
+      .mr-2 {
+        margin-right: 8px;
+      }
+
+      .card-panel {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      table tbody tr {
+        transition: background-color 0.2s ease;
+      }
+
+      table tbody tr:hover {
+        background-color: #f9f9f9 !important;
+      }
+
+      input[type="date"]::-webkit-calendar-picker-indicator,
+      input[type="date"]::-moz-calendar-picker-indicator {
+        display: none;
+      }
+
+      @media screen and (max-width: 600px) {
+        .pb-m {
+          padding-bottom: 3rem !important;
+        }
+        .row {
+          margin-bottom: 0 !important;
+        }
+        .resumo {
+          margin-bottom: 0 !important;
+          margin-top: 0 !important;
+        }
+        table {
+          font-size: 0.9rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- Formulário de cadastro -->
+      <div class="row" style="margin-top: 20px">
+        <form class="card col s12 white" name="cadastro">
+          <div class="card-image">
+            <img src="konta_banner.png" alt="Konta - Controle Financeiro" />
+          </div>
+
+          <!-- Campos de entrada -->
+          <div class="input-field col s12 m6 l4 show-hide">
+            <input class="validate datepicker" type="text" id="data" />
+            <label class="active" for="data">Data</label>
+          </div>
+
+          <div class="input-field col s12 m6 l4 show-hide">
+            <input type="text" id="descricao" class="validate" />
+            <label class="active" for="descricao">Descrição</label>
+          </div>
+
+          <div class="input-field col s12 m6 l4 show-hide">
+            <input type="number" class="validate" id="valor" step="0.01" />
+            <label class="active" for="valor">Valor</label>
+          </div>
+
+          <div class="input-field col s12 m6 l4 show-hide">
+            <i class="material-icons prefix">tune</i>
+            <select id="tipo">
+              <option value="Receita">Receita</option>
+              <option value="Despesa">Despesa</option>
+            </select>
+            <label>Tipo</label>
+          </div>
+
+          <div class="input-field col s12 m6 l4 show-hide">
+            <i class="material-icons prefix">tune</i>
+            <select id="categoria">
+              <option>Alimentação</option>
+              <option>Cartão</option>
+              <option>Moradia</option>
+              <option>Transporte</option>
+              <option>Salário</option>
+              <option>Saúde</option>
+              <option>Outros</option>
+            </select>
+            <label>Categoria</label>
+          </div>
+
+          <!-- Botões -->
+          <div class="input-field col s12 m6 l4">
+            <button
+              class="btn waves-effect waves-light right show-hide"
+              type="button"
+              id="adicionarBtn"
+              onclick="window.app.adicionar()"
+              style="display: inline-block"
+            >
+              Gravar
+              <i class="material-icons right">save</i>
+            </button>
+
+            <button
+              class="btn-flat btn-floating waves-effect secondary-content left"
+              type="button"
+              onclick="window.app.toggleCadastro()"
+              style="display: inline-block"
+            >
+              <i
+                class="material-icons blue-text text-darken-4 right"
+                id="collapseCadastro"
+                >expand_less</i
+              >
+            </button>
+
+            <button
+              class="btn waves-effect waves-light amber darken-3 right"
+              type="button"
+              id="alterarBtn"
+              onclick="window.app.salvarAlteracao()"
+              style="display: none"
+            >
+              Salvar
+              <i class="material-icons right">check</i>
+            </button>
+
+            <button
+              class="btn waves-effect waves-light right"
+              type="button"
+              id="cancelarBtn"
+              onclick="window.app.limpar()"
+              style="display: none"
+            >
+              Cancelar
+              <i class="material-icons right">cancel</i>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Resumo e Filtros -->
+      <div class="row">
+        <div class="col s12 m3 input-field resumo">
+          <h5
+            class="blue-text text-darken-4 col valign-wrapper"
+            style="padding: 5px 0; margin: 0"
+          >
+            Resumo
+          </h5>
+          <button
+            class="btn-flat btn-floating waves-effect secondary-content left"
+            type="button"
+            onclick="window.app.mesPrevio()"
+            style="display: inline-block"
+          >
+            <i class="material-icons blue-text text-darken-4 right"
+              >navigate_before</i
+            >
+          </button>
+          <button
+            class="btn-flat btn-floating waves-effect secondary-content left"
+            type="button"
+            onclick="window.app.proximoMes()"
+            style="display: inline-block"
+          >
+            <i class="material-icons blue-text text-darken-4 right"
+              >navigate_next</i
+            >
+          </button>
+        </div>
+
+        <div class="col s12 m9 l9 pb-m">
+          <div class="col s6 m4 grey-text">
+            <div class="input-field inline">
+              <input
+                type="text"
+                class="datepicker"
+                id="dataInicio"
+                placeholder="De"
+              />
+            </div>
+          </div>
+          <div class="col s6 m4 grey-text">
+            <div class="input-field inline">
+              <input
+                type="text"
+                class="datepicker"
+                id="dataFim"
+                placeholder="Até"
+              />
+            </div>
+          </div>
+          <div class="col s12 m4 grey-text">
+            <div class="input-field">
+              <label>
+                <input
+                  class="filled-in"
+                  id="saldoReal"
+                  type="checkbox"
+                  onclick="window.app.showSaldoReal(this.checked)"
+                />
+                <span>Saldo Real</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cards de resumo -->
+      <div class="row">
+        <div class="col s12 m6 l3">
+          <div class="card-panel col s12 rounded-m p-m">
+            <div class="card-content">
+              <small class="card-title grey-text">Saldo Atual</small>
+              <div class="row blue-text text-darken-4">
+                <div class="col s8">
+                  <h6>R$ <span id="saldo">0.00</span></h6>
+                </div>
+                <div class="col s4">
+                  <h6 class="right">
+                    <i class="material-icons">account_balance_wallet</i>
+                  </h6>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col s12 m6 l3">
+          <div class="card-panel col s12 rounded-m p-m">
+            <div class="card-content">
+              <small class="card-title grey-text">Receitas</small>
+              <div class="row green-text text-darken-2">
+                <div class="col s8">
+                  <h6>R$ <span id="totalReceitas">0.00</span></h6>
+                </div>
+                <div class="col s4">
+                  <h6 class="right">
+                    <i class="material-icons">monetization_on</i>
+                  </h6>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col s12 m6 l3">
+          <div class="card-panel col s12 rounded-m p-m">
+            <div class="card-content">
+              <small class="card-title grey-text">Despesas</small>
+              <div class="row red-text text-darken-2">
+                <div class="col s8">
+                  <h6>R$ <span id="totalDespesas">0.00</span></h6>
+                </div>
+                <div class="col s4">
+                  <h6 class="right">
+                    <i class="material-icons">add_shopping_cart</i>
+                  </h6>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col s12 m6 l3">
+          <div class="card-panel col s12 rounded-m p-m">
+            <div class="card-content">
+              <small class="card-title grey-text">Saldo Futuro</small>
+              <div class="row blue-text text-darken-1">
+                <div class="col s8">
+                  <h6>R$ <span id="saldoFuturo">0.00</span></h6>
+                </div>
+                <div class="col s4">
+                  <h6 class="right">
+                    <i class="material-icons">insert_invitation</i>
+                  </h6>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de lançamentos -->
+      <div class="row">
+        <div class="col s12">
+          <div style="overflow-x: auto">
+            <table class="highlight responsive-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Descrição</th>
+                  <th>Categoria</th>
+                  <th>Valor</th>
+                  <th>Tipo</th>
+                  <th>Pago</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="lista"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfico -->
+      <div class="row" style="margin-top: 40px">
+        <div class="col s12">
+          <canvas id="grafico" height="100"></canvas>
+        </div>
+      </div>
+
+      <!-- Backup -->
+      <div class="row" style="margin-top: 40px; margin-bottom: 40px">
+        <div class="col s12 right-align">
+          <button
+            type="button"
+            class="btn waves-effect waves-light"
+            onclick="window.app.exportarBackup()"
+          >
+            Exportar Backup
+            <i class="material-icons right">backup</i>
+          </button>
+
+          <div class="file-field input-field inline" style="margin-left: 10px">
+            <div class="btn-small">
+              <span
+                >Importar Backup
+                <i class="material-icons right">cloud_download</i></span
+              >
+              <input type="file" id="importarArquivo" accept=".json" />
+            </div>
+            <div class="file-path-wrapper">
+              <input
+                class="file-path validate"
+                type="text"
+                style="margin-bottom: 0"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Materialize JS -->
+    <script
+      type="text/javascript"
+      src="materialize/js/materialize.min.js"
+    ></script>
+
+    <!-- App JS (module) -->
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

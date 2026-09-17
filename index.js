@@ -704,7 +704,7 @@ async function obterLancamentosFirebase() {
     await snapshot.forEach((doc) => {
       lancamentos.push({
         id: doc.id,
-        data: doc.data().data.toDate().toISOString().substring(0, 10),
+        data: doc.data().data,
         descricao: doc.data().descricao,
         valor: doc.data().valor,
         tipo: doc.data().tipo,
@@ -719,6 +719,7 @@ async function obterLancamentosFirebase() {
     // console.log("Lançamentos obtidos do Firebase:", lancamentos);
     carregar();
   } catch (error) {
+    console.log(error);
     alert("Erro ao obter dados do Firebase: " + error.message);
   }
 }
